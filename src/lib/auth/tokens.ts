@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
 
+import { getServerEnv } from "../config/server";
+
 export type AuthRole = "ADMIN" | "USER";
 
 export type AccessTokenClaims = {
@@ -14,20 +16,12 @@ export type RefreshTokenClaims = {
   typ: "refresh";
 };
 
-function requireEnv(name: string) {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
-
 function getAccessSecret() {
-  return requireEnv("JWT_ACCESS_SECRET");
+  return getServerEnv().JWT_ACCESS_SECRET;
 }
 
 function getRefreshSecret() {
-  return requireEnv("JWT_REFRESH_SECRET");
+  return getServerEnv().JWT_REFRESH_SECRET;
 }
 
 export function signAccessToken(user: { id: string; role: AuthRole }) {

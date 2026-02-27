@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeToggle } from "../components/theme-toggle";
+import { getCurrentUser } from "@/lib/auth/server";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,11 +21,13 @@ export const metadata: Metadata = {
     "Voyager Logs is a personal vlog storytelling platform for long-form video, photos, and reflective writing.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -41,12 +45,28 @@ export default function RootLayout({
               <a href="/" className="hover:underline">
                 Home
               </a>
-              <a href="/login" className="hover:underline">
-                Login
-              </a>
-              <a href="/admin" className="hidden hover:underline md:inline">
-                Admin
-              </a>
+              {user ? (
+                <>
+                  <a href="/profile" className="hover:underline">
+                    Profile
+                  </a>
+                  {user.role === "ADMIN" ? (
+                    <a href="/admin" className="hidden hover:underline md:inline">
+                      Admin
+                    </a>
+                  ) : null}
+                  <LogoutButton />
+                </>
+              ) : (
+                <>
+                  <a href="/login" className="hover:underline">
+                    Login
+                  </a>
+                  <a href="/register" className="hidden hover:underline md:inline">
+                    Register
+                  </a>
+                </>
+              )}
               <ThemeToggle />
             </nav>
           </div>

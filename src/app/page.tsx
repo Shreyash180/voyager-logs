@@ -1,49 +1,102 @@
-export default function Home() {
-  return (
-    <div className="space-y-10">
-      <section className="space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-foreground/60">
-          Voyager Logs
-        </p>
-        <h1 className="max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
-          A personal vlog platform for long-form stories and reflections.
-        </h1>
-        <p className="max-w-2xl text-sm text-foreground/70">
-          This app is your laboratory for learning real-world web architecture:
-          server-side rendered pages, relational data with PostgreSQL, JWT-based
-          authentication, and production-minded patterns like rate limiting and
-          caching.
-        </p>
-      </section>
+import { PostCard, type PostCardData } from "@/components/posts/post-card";
+import { getBaseUrl } from "@/lib/base-url";
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border bg-background/60 p-4">
-          <h2 className="text-sm font-semibold">Public experience</h2>
-          <p className="mt-2 text-xs text-foreground/70">
-            Browse vlogs, read long-form reflections, search by title or tags,
-            and explore individual stories. This page will evolve into the
-            paginated feed of latest posts.
-          </p>
-        </div>
-        <div className="rounded-xl border bg-background/60 p-4">
-          <h2 className="text-sm font-semibold">Creator tools</h2>
-          <p className="mt-2 text-xs text-foreground/70">
-            As the admin, you&apos;ll publish posts with video embeds, photos,
-            and writing, manage comments, and see engagement analytics.
-          </p>
-        </div>
+type PageProps = {
+  searchParams: Promise<{ page?: string; q?: string; tag?: string }>;
+};
+
+export default async function Home(props: PageProps) {
+  const sp = await props.searchParams;
+  const page = sp.page ?? "1";
+  const q = sp.q ?? "";
+  const tag = sp.tag ?? "";
+
+  const baseUrl = await getBaseUrl();
+  const url = new URL("/api/posts", baseUrl);
+  url.searchParams.set("page", page);
+  url.searchParams.set("limit", "10");
+  if (q) url.searchParams.set("q", q);
+  if (tag) url.searchParams.set("tag", tag);
+
+  const res = await fetch(url, { cache: "no-store" });
+  const data = (await res.json()) as { posts: PostCardData[]; total: number; hasMore: boolean };
+
+  const currentPage = Number(page) || 1;
+
+  return (
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Latest voyager logs
+        </h1>
+        <p className="text-sm text-foreground/70">
+          Search, filter by tags, and open a post to watch and read the long-form
+          reflection.
+        </p>
       </section>
 
       <section className="rounded-xl border bg-background/60 p-4">
-        <h2 className="text-sm font-semibold">What&apos;s next</h2>
-        <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs text-foreground/75">
-          <li>Wire up PostgreSQL and Prisma models for users and posts.</li>
-          <li>Add JWT-based authentication and role-aware APIs.</li>
-          <li>
-            Build out the homepage feed, post pages, and admin dashboard on top
-            of that foundation.
-          </li>
-        </ol>
+        <form className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1 space-y-1">
+            <label className="text-xs font-medium text-foreground/80">
+              Search
+            </label>
+            <input
+              name="q"
+              defaultValue={q}
+              placeholder="Search title or content…"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/20"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-foreground/80">Tag</label>
+            <input
+              name="tag"
+              defaultValue={tag}
+              placeholder="e.g. travel"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/20"
+            />
+          </div>
+          <button className="inline-flex h-10 items-center justify-center rounded-lg bg-foreground px-4 text-sm font-medium text-background">
+            Apply
+          </button>
+        </form>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {data.posts?.length ? (
+          data.posts.map((p) => <PostCard key={p.id} post={p} />)
+        ) : (
+          <div className="col-span-full rounded-xl border bg-background/60 p-6 text-sm text-foreground/70">
+            No posts yet.
+          </div>
+        )}
+      </section>
+
+      <section className="flex items-center justify-between">
+        <a
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            currentPage <= 1 ? "pointer-events-none opacity-50" : "hover:bg-foreground/5"
+          }`}
+          href={`/?page=${Math.max(1, currentPage - 1)}&q=${encodeURIComponent(
+            q,
+          )}&tag=${encodeURIComponent(tag)}`}
+        >
+          Previous
+        </a>
+        <span className="text-sm text-foreground/60">
+          Page {currentPage} • {data.total ?? 0} total
+        </span>
+        <a
+          className={`rounded-lg border px-3 py-2 text-sm ${
+            !data.hasMore ? "pointer-events-none opacity-50" : "hover:bg-foreground/5"
+          }`}
+          href={`/?page=${currentPage + 1}&q=${encodeURIComponent(q)}&tag=${encodeURIComponent(
+            tag,
+          )}`}
+        >
+          Next
+        </a>
       </section>
     </div>
   );
