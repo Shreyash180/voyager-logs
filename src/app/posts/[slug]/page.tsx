@@ -1,0 +1,136 @@
+import type { Metadata } from "next";
+
+import { BookmarkButton } from "@/components/posts/bookmark-button";
+import { LikeButton } from "@/components/posts/like-button";
+import { CommentSection } from "@/components/comments/comment-section";
+import { getBaseUrl } from "@/lib/base-url";
+
+type PageProps = { params: Promise<{ slug: string }> };
+
+async function fetchPost(slug: string) {
+  const baseUrl = await getBaseUrl();
+  const url = new URL(`/api/posts/${encodeURIComponent(slug)}`, baseUrl);
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) return null;
+  return (await res.json()) as {
+    post: {
+      id: string;
+      title: string;
+      slug: string;
+      content: string;
+      videoUrl: string | null;
+      thumbnailUrl: string | null;
+      views: number;
+      createdAt: string;
+      updatedAt: string;
+      author: { id: string; name: string | null };
+      tags: { id: string; name: string; slug: string }[];
+      _count: { likes: number; comments: number; bookmarks: number };
+    };
+    viewer: { liked: boolean; bookmarked: boolean };
+  };
+}
+
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const { slug } = await props.params;
+  const data = await fetchPost(slug);
+  if (!data) return { title: "Post not found | Voyager Logs" };
+
+  return {
+    title: `${data.post.title} | Voyager Logs`,
+    description: data.post.content.slice(0, 160),
+    openGraph: {
+      title: data.post.title,
+      description: data.post.content.slice(0, 160),
+      images: data.post.thumbnailUrl ? [data.post.thumbnailUrl] : [],
+    },
+  };
+}
+
+export default async function PostPage(props: PageProps) {
+  const { slug } = await props.params;
+  const data = await fetchPost(slug);
+
+  if (!data) {
+    return (
+      <div className="rounded-xl border bg-background/60 p-6">
+        <h1 className="text-xl font-semibold">Post not found</h1>
+        <p className="mt-2 text-sm text-foreground/70">
+          The post you are looking for doesn’t exist (or hasn’t been published
+          yet).
+        </p>
+        <a href="/" className="mt-4 inline-flex text-sm font-medium hover:underline">
+          Back to home
+        </a>
+      </div>
+    );
+  }
+
+  const { post, viewer } = data;
+
+  return (
+    <div className="space-y-8">
+      <header className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {post.tags.map((t) => (
+            <a
+              key={t.id}
+              href={`/?tag=${encodeURIComponent(t.slug)}`}
+              className="rounded-full border px-2 py-0.5 text-[11px] text-foreground/70 hover:bg-foreground/5"
+            >
+              {t.name}
+            </a>
+          ))}
+        </div>
+        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
+          {post.title}
+        </h1>
+        <div className="flex flex-wrap items-center gap-4 text-xs text-foreground/60">
+          <span>By {post.author.name ?? "Admin"}</span>
+          <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+          <span>{post.views} views</span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <LikeButton
+            postId={post.id}
+            initialLiked={viewer.liked}
+            initialCount={post._count.likes}
+          />
+          <BookmarkButton
+            postId={post.id}
+            initialBookmarked={viewer.bookmarked}
+            initialCount={post._count.bookmarks}
+          />
+        </div>
+      </header>
+
+      {post.videoUrl ? (
+        <section className="overflow-hidden rounded-xl border bg-black">
+          <div className="aspect-video w-full">
+            <iframe
+              src={post.videoUrl}
+              className="h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {post.thumbnailUrl ? (
+        <section className="overflow-hidden rounded-xl border">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={post.thumbnailUrl} alt="" className="w-full object-cover" />
+        </section>
+      ) : null}
+
+      <section className="prose prose-zinc max-w-none dark:prose-invert">
+        <p className="whitespace-pre-wrap">{post.content}</p>
+      </section>
+
+      <CommentSection postId={post.id} />
+    </div>
+  );
+}
+

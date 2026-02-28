@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id           String     @id @default(uuid())
+  name         String?
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(USER)
+  posts        Post[]
+  comments     Comment[]
+  likes        Like[]
+  bookmarks    Bookmark[]
+  postViews    PostView[]
+  createdAt    DateTime   @default(now())
+
+  @@index([createdAt])
+}
+
+model Post {
+  id           String     @id @default(uuid())
+  title        String
+  slug         String     @unique
+  content      String
+  videoUrl     String?
+  thumbnailUrl String?
+  views        Int        @default(0)
+  author       User       @relation(fields: [authorId], references: [id])
+  authorId     String
+  comments     Comment[]
+  likes        Like[]
+  bookmarks    Bookmark[]
+  tags         PostTag[]
+  viewsHistory PostView[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([slug])
+  @@index([createdAt])
+  @@index([authorId])
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  posts     PostTag[]
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+}
+
+model PostTag {
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId     String
+  createdAt DateTime @default(now())
+
+  @@id([postId, tagId])
+  @@index([tagId])
+  @@index([postId])
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  content   String
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  parent    Comment?  @relation("CommentToComment", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId  String?
+  children  Comment[] @relation("CommentToComment")
+  createdAt DateTime  @default(now())
+
+  @@index([postId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Like {
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+  @@index([postId])
+  @@index([createdAt])
+}
+
+model Bookmark {
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+  @@index([userId])
+  @@index([postId])
+  @@index([createdAt])
+}
+
+model PostView {
+  id        String   @id @default(uuid())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  ipHash    String?
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([userId])
+  @@index([createdAt])
+}
+

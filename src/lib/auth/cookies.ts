@@ -18,12 +18,11 @@ function cookieBase() {
   };
 }
 
-export function setAuthCookies(params: {
+export async function setAuthCookies(params: {
   accessToken: string;
   refreshToken: string;
 }) {
-  const store = cookies();
-
+  const store = await cookies();
   store.set(ACCESS_COOKIE, params.accessToken, {
     ...cookieBase(),
     maxAge: 60 * 15,
@@ -35,17 +34,16 @@ export function setAuthCookies(params: {
   });
 }
 
-export function clearAuthCookies() {
-  const store = cookies();
+export async function clearAuthCookies() {
+  const store = await cookies();
   store.set(ACCESS_COOKIE, "", { ...cookieBase(), maxAge: 0 });
   store.set(REFRESH_COOKIE, "", { ...cookieBase(), maxAge: 0 });
 }
 
-export function readAccessCookie() {
-  return cookies().get(ACCESS_COOKIE)?.value ?? null;
+export async function readAccessCookie() {
+  return (await cookies()).get(ACCESS_COOKIE)?.value ?? null;
 }
 
-export function readRefreshCookie() {
-  return cookies().get(REFRESH_COOKIE)?.value ?? null;
+export async function readRefreshCookie() {
+  return (await cookies()).get(REFRESH_COOKIE)?.value ?? null;
 }
-
