@@ -12,6 +12,11 @@ enum Role {
   USER
 }
 
+enum UserStatus {
+  ACTIVE
+  BANNED
+}
+
 model User {
   id           String     @id @default(uuid())
   name         String?
@@ -19,15 +24,19 @@ model User {
   passwordHash String
   avatarUrl    String?
   role         Role       @default(USER)
+  status       UserStatus @default(ACTIVE)
   lastSeen     DateTime?
   posts        Post[]
   comments     Comment[]
   likes        Like[]
   bookmarks    Bookmark[]
   postViews    PostView[]
+  auditActions AdminAuditLog[] @relation("AuditActor")
+  auditTargets AdminAuditLog[] @relation("AuditTarget")
   createdAt    DateTime   @default(now())
 
   @@index([createdAt])
+  @@index([status])
 }
 
 model Post {
@@ -133,4 +142,20 @@ model PostView {
   @@index([postId])
   @@index([userId])
   @@index([createdAt])
+}
+
+model AdminAuditLog {
+  id           String   @id @default(uuid())
+  actor        User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actorId      String?
+  targetUser   User?    @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  targetUserId String?
+  action       String
+  details      Json?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([targetUserId])
+  @@index([action])
 }

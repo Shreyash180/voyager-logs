@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
         name: true,
         email: true,
         role: true,
+        status: true,
         passwordHash: true,
         createdAt: true,
       },
@@ -44,6 +45,13 @@ export async function POST(req: NextRequest) {
         status: 401,
         code: "INVALID_CREDENTIALS",
         message: "Invalid email or password.",
+      });
+    }
+    if (user.status !== "ACTIVE") {
+      throw new ApiError({
+        status: 403,
+        code: "ACCOUNT_DISABLED",
+        message: "This account has been disabled. Contact an administrator.",
       });
     }
 

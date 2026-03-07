@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth/server";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { NeonButton } from "@/components/ui/neon-button";
 import { Avatar } from "@/components/ui/avatar";
+import { AuthHeartbeat } from "@/components/auth/auth-heartbeat";
 
 export const metadata: Metadata = {
   title: "Voyager Logs",
@@ -75,6 +76,7 @@ export default async function RootLayout({
           </div>
         </header>
         <main className="page-main">
+          {user ? <AuthHeartbeat /> : null}
           <div className="mx-auto max-w-5xl px-4 py-8">{children}</div>
         </main>
         <footer className="page-footer border-t border-white/10 bg-[color:var(--surface-strong)]/85">

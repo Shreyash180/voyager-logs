@@ -17,11 +17,13 @@ export async function getCurrentUser() {
         name: true,
         email: true,
         role: true,
+        status: true,
         avatarUrl: true,
         lastSeen: true,
         createdAt: true,
       },
     });
+    if (!user || user.status !== "ACTIVE") return null;
     return user;
   } catch {
     return null;

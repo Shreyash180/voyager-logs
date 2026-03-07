@@ -28,6 +28,9 @@ export default async function AdminPage() {
             <a href="/admin/comments" className="font-medium hover:underline">
               Manage comments
             </a>
+            <a href="/admin/users" className="font-medium hover:underline">
+              Manage users
+            </a>
           </div>
         </div>
         <a

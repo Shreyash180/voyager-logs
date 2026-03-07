@@ -48,14 +48,13 @@ export function requireUser(req: NextRequest): AuthUser {
 
 export async function requireAdmin(req: NextRequest): Promise<AuthUser> {
   const user = requireUser(req);
-  if (user.role === "ADMIN") return user;
-
-  // Role can change after a token is issued. Re-check against the database.
+  // Role/status can change after a token is issued. Re-check against the database.
   const fresh = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { role: true },
+    select: { role: true, status: true },
   });
 
-  if (fresh?.role !== "ADMIN") throw new ForbiddenError("Admin access required.");
-  return user;
+  if (!fresh || fresh.status !== "ACTIVE") throw new AuthError("Login required.");
+  if (fresh.role !== "ADMIN") throw new ForbiddenError("Admin access required.");
+  return { id: user.id, role: "ADMIN" };
 }
