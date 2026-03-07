@@ -1,5 +1,9 @@
 import { PostCard, type PostCardData } from "@/components/posts/post-card";
 import { getBaseUrl } from "@/lib/base-url";
+import { Hero } from "@/components/home/hero";
+import { getCurrentUser } from "@/lib/auth/server";
+import { prisma } from "@/lib/prisma";
+import { NeonButton } from "@/components/ui/neon-button";
 
 type PageProps = {
   searchParams: Promise<{ page?: string; q?: string; tag?: string }>;
@@ -20,31 +24,44 @@ export default async function Home(props: PageProps) {
 
   const res = await fetch(url, { cache: "no-store" });
   const data = (await res.json()) as { posts: PostCardData[]; total: number; hasMore: boolean };
+  const [user, totalPostsCount, totalUsersCount] = await Promise.all([
+    getCurrentUser(),
+    prisma.post.count({ where: { published: true } }),
+    prisma.user.count(),
+  ]);
 
   const currentPage = Number(page) || 1;
+  const todayLabel = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date());
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Latest voyager logs
-        </h1>
+      <Hero
+        totalPosts={totalPostsCount}
+        totalUsers={totalUsersCount}
+        todayLabel={todayLabel}
+        canWrite={Boolean(user && user.role === "ADMIN")}
+      />
+
+      <section id="explore" className="space-y-3">
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Explore recent logs</h2>
         <p className="text-sm text-foreground/70">
-          Search, filter by tags, and open a post to watch and read the long-form
-          reflection.
+          Search, filter by tags, and open a post to watch and read the long-form reflection.
         </p>
       </section>
 
-      <section className="rounded-xl border bg-background/60 p-4">
+      <section className="glass-panel p-4">
         <form className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1 space-y-1">
-            <label className="text-xs font-medium text-foreground/80">
-              Search
-            </label>
+            <label className="text-xs font-medium text-foreground/80">Search</label>
             <input
               name="q"
               defaultValue={q}
-              placeholder="Search title or content…"
+              placeholder="Search title or content..."
               className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/20"
             />
           </div>
@@ -57,9 +74,7 @@ export default async function Home(props: PageProps) {
               className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/20"
             />
           </div>
-          <button className="inline-flex h-10 items-center justify-center rounded-lg bg-foreground px-4 text-sm font-medium text-background">
-            Apply
-          </button>
+          <NeonButton className="h-10 px-4">Apply</NeonButton>
         </form>
       </section>
 
@@ -67,7 +82,7 @@ export default async function Home(props: PageProps) {
         {data.posts?.length ? (
           data.posts.map((p) => <PostCard key={p.id} post={p} />)
         ) : (
-          <div className="col-span-full rounded-xl border bg-background/60 p-6 text-sm text-foreground/70">
+          <div className="glass-panel col-span-full p-6 text-sm text-foreground/70">
             No posts yet.
           </div>
         )}
@@ -85,7 +100,7 @@ export default async function Home(props: PageProps) {
           Previous
         </a>
         <span className="text-sm text-foreground/60">
-          Page {currentPage} • {data.total ?? 0} total
+          Page {currentPage} - {data.total ?? 0} total
         </span>
         <a
           className={`rounded-lg border px-3 py-2 text-sm ${

@@ -9,14 +9,14 @@ import { invalidatePostDetailCache, invalidatePostListCache } from "@/lib/cache/
 
 export const runtime = "nodejs";
 
-const PostIdSchema = z.string().uuid();
+const IdentifierSchema = z.string().uuid();
 
-export async function POST(req: NextRequest, ctx: { params: Promise<{ postId: string }> }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ identifier: string }> }) {
   return withRoute(async () => {
     enforceRateLimit(req, { name: "post-like-write", max: 120, windowMs: 60 * 1000 });
     const user = requireUser(req);
-    const { postId } = await ctx.params;
-    const pid = PostIdSchema.parse(postId);
+    const { identifier } = await ctx.params;
+    const pid = IdentifierSchema.parse(identifier);
 
     await prisma.like.upsert({
       where: { userId_postId: { userId: user.id, postId: pid } },
@@ -36,12 +36,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ postId: st
   });
 }
 
-export async function DELETE(req: NextRequest, ctx: { params: Promise<{ postId: string }> }) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ identifier: string }> }) {
   return withRoute(async () => {
     enforceRateLimit(req, { name: "post-like-write", max: 120, windowMs: 60 * 1000 });
     const user = requireUser(req);
-    const { postId } = await ctx.params;
-    const pid = PostIdSchema.parse(postId);
+    const { identifier } = await ctx.params;
+    const pid = IdentifierSchema.parse(identifier);
 
     await prisma.like.deleteMany({ where: { userId: user.id, postId: pid } });
     const [count, post] = await Promise.all([

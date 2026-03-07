@@ -11,6 +11,7 @@ import { PostUpsertSchema } from "@/lib/validation/posts";
 import { getOrSetCached } from "@/lib/cache/store";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { invalidatePostListCache, postListCacheKey } from "@/lib/cache/posts";
+import { getUserFromRequest } from "@/lib/auth/require";
 
 export const runtime = "nodejs";
 
@@ -23,7 +24,6 @@ async function uniqueSlug(base: string) {
   let attempt = base || "post";
   let suffix = 1;
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const exists = await prisma.post.findUnique({ where: { slug: attempt }, select: { id: true } });
     if (!exists) return attempt;
@@ -40,7 +40,10 @@ export async function GET(req: NextRequest) {
       tag: req.nextUrl.searchParams.get("tag") ?? undefined,
     });
 
+    const viewer = getUserFromRequest(req);
+
     const where = {
+      ...(viewer?.role === "ADMIN" ? {} : { published: true }),
       ...(q
         ? {
             OR: [
@@ -73,6 +76,8 @@ export async function GET(req: NextRequest) {
             id: true,
             title: true,
             slug: true,
+            excerpt: true,
+            content: true,
             thumbnailUrl: true,
             videoUrl: true,
             views: true,
@@ -105,11 +110,11 @@ export async function POST(req: NextRequest) {
   return withRoute(async () => {
     enforceRateLimit(req, {
       name: "admin-post-create",
-      max: 30,
-      windowMs: 10 * 60 * 1000,
+      max: 10,
+      windowMs: 60 * 60 * 1000,
     });
 
-    const admin = requireAdmin(req);
+    const admin = await requireAdmin(req);
 
     const json = await req.json().catch(() => {
       throw new ApiError({ status: 400, code: "INVALID_JSON", message: "Invalid JSON body." });
@@ -140,9 +145,11 @@ export async function POST(req: NextRequest) {
       data: {
         title: input.title,
         slug,
+        excerpt: input.excerpt ?? input.content.slice(0, 220),
         content: input.content,
         videoUrl: input.videoUrl,
         thumbnailUrl: input.thumbnailUrl,
+        published: input.published ?? true,
         authorId: admin.id,
         tags: {
           create: tags.map((t) => ({ tagId: t.id })),
@@ -152,6 +159,8 @@ export async function POST(req: NextRequest) {
         id: true,
         title: true,
         slug: true,
+        excerpt: true,
+        published: true,
         content: true,
         videoUrl: true,
         thumbnailUrl: true,

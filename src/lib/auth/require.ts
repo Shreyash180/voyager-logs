@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { ACCESS_COOKIE } from "./cookies";
 import { verifyAccessToken, type AuthRole } from "./tokens";
+import { prisma } from "@/lib/prisma";
 
 export type AuthUser = {
   id: string;
@@ -45,9 +46,16 @@ export function requireUser(req: NextRequest): AuthUser {
   return user;
 }
 
-export function requireAdmin(req: NextRequest): AuthUser {
+export async function requireAdmin(req: NextRequest): Promise<AuthUser> {
   const user = requireUser(req);
-  if (user.role !== "ADMIN") throw new ForbiddenError("Admin access required.");
+  if (user.role === "ADMIN") return user;
+
+  // Role can change after a token is issued. Re-check against the database.
+  const fresh = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { role: true },
+  });
+
+  if (fresh?.role !== "ADMIN") throw new ForbiddenError("Admin access required.");
   return user;
 }
-

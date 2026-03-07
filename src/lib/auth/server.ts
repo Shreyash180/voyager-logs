@@ -12,7 +12,15 @@ export async function getCurrentUser() {
     const claims = verifyAccessToken(token);
     const user = await prisma.user.findUnique({
       where: { id: claims.sub },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatarUrl: true,
+        lastSeen: true,
+        createdAt: true,
+      },
     });
     return user;
   } catch {

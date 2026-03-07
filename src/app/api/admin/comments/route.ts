@@ -14,7 +14,7 @@ const QuerySchema = z.object({
 
 export async function GET(req: NextRequest) {
   return withRoute(async () => {
-    requireAdmin(req);
+    await requireAdmin(req);
 
     const { page, limit, skip, take } = parsePagination(req.nextUrl.searchParams);
     const { q } = QuerySchema.parse({

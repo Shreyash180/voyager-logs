@@ -11,7 +11,7 @@ import { invalidatePostDetailCache, invalidatePostListCache } from "@/lib/cache/
 
 export const runtime = "nodejs";
 
-const PostIdSchema = z.string().uuid();
+const IdentifierSchema = z.string().uuid();
 
 type CommentNode = {
   id: string;
@@ -41,10 +41,10 @@ function buildTree(items: Omit<CommentNode, "children">[]) {
   return roots;
 }
 
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ postId: string }> }) {
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ identifier: string }> }) {
   return withRoute(async () => {
-    const { postId } = await ctx.params;
-    const pid = PostIdSchema.parse(postId);
+    const { identifier } = await ctx.params;
+    const pid = IdentifierSchema.parse(identifier);
 
     const comments = await prisma.comment.findMany({
       where: { postId: pid },
@@ -62,12 +62,12 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ postId: st
   });
 }
 
-export async function POST(req: NextRequest, ctx: { params: Promise<{ postId: string }> }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ identifier: string }> }) {
   return withRoute(async () => {
     enforceRateLimit(req, { name: "post-comment-create", max: 40, windowMs: 10 * 60 * 1000 });
     const user = requireUser(req);
-    const { postId } = await ctx.params;
-    const pid = PostIdSchema.parse(postId);
+    const { identifier } = await ctx.params;
+    const pid = IdentifierSchema.parse(identifier);
 
     const json = await req.json().catch(() => {
       throw new ApiError({ status: 400, code: "INVALID_JSON", message: "Invalid JSON body." });

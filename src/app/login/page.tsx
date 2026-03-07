@@ -1,4 +1,5 @@
 import { AuthForm } from "@/components/auth/auth-form";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
@@ -9,14 +10,14 @@ export default function LoginPage() {
           Use your account to like, comment, and bookmark posts.
         </p>
       </div>
-      <div className="rounded-xl border bg-background/60 p-4">
+      <div className="glass-panel p-4">
         <AuthForm mode="login" />
       </div>
       <p className="text-sm text-foreground/70">
         New here?{" "}
-        <a href="/register" className="font-medium hover:underline">
+        <Link href="/register" className="font-medium text-cyan-200 hover:underline">
           Create an account
-        </a>
+        </Link>
         .
       </p>
     </div>

@@ -38,7 +38,7 @@ export function LikeButton(props: {
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium hover:bg-foreground hover:text-background disabled:opacity-60"
+      className="inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-100 hover:bg-cyan-400/20 disabled:opacity-60"
       disabled={loading}
     >
       <span className="h-2 w-2 rounded-full bg-current" />

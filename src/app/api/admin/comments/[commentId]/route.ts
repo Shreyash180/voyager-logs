@@ -17,7 +17,7 @@ export async function DELETE(
   ctx: { params: Promise<{ commentId: string }> },
 ) {
   return withRoute(async () => {
-    requireAdmin(req);
+    await requireAdmin(req);
     enforceRateLimit(req, { name: "admin-comment-delete", max: 80, windowMs: 10 * 60 * 1000 });
 
     const { commentId } = await ctx.params;

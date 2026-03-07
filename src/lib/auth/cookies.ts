@@ -3,17 +3,13 @@ import { cookies } from "next/headers";
 export const ACCESS_COOKIE = "vl_access";
 export const REFRESH_COOKIE = "vl_refresh";
 
-type CookieOptions = {
-  maxAgeSeconds?: number;
-};
-
 function cookieBase() {
   const isProd = process.env.NODE_ENV === "production";
 
   return {
     httpOnly: true,
     secure: isProd,
-    sameSite: "lax" as const,
+    sameSite: "strict" as const,
     path: "/",
   };
 }

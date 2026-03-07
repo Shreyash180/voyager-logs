@@ -9,7 +9,8 @@ import { getServerEnv } from "@/lib/config/server";
 
 export const runtime = "nodejs";
 
-const MAX_FILE_SIZE = 8 * 1024 * 1024;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
 
 function buildCloudinarySignature(params: Record<string, string>, apiSecret: string) {
   const query = Object.entries(params)
@@ -22,7 +23,7 @@ function buildCloudinarySignature(params: Record<string, string>, apiSecret: str
 
 export async function POST(req: NextRequest) {
   return withRoute(async () => {
-    requireAdmin(req);
+    await requireAdmin(req);
     enforceRateLimit(req, {
       name: "admin-upload-thumbnail",
       max: 30,
@@ -44,11 +45,11 @@ export async function POST(req: NextRequest) {
       throw new ApiError({ status: 400, code: "INVALID_FILE", message: "File is required." });
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (!ALLOWED_MIME_TYPES.has(file.type.toLowerCase())) {
       throw new ApiError({
         status: 400,
         code: "INVALID_FILE_TYPE",
-        message: "Only image uploads are supported for thumbnails.",
+        message: "Only JPG, PNG, and WebP uploads are supported for thumbnails.",
       });
     }
 
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
       throw new ApiError({
         status: 400,
         code: "FILE_TOO_LARGE",
-        message: "File is too large. Maximum allowed size is 8MB.",
+        message: "File is too large. Maximum allowed size is 5MB.",
       });
     }
 

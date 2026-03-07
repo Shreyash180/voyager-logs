@@ -1,5 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
-import type { NextFetchEvent } from "next/server";
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { z } from "zod";
 
@@ -42,7 +41,7 @@ function maybeTrackPostView(req: NextRequest, event: NextFetchEvent, userId?: st
   );
 }
 
-export async function middleware(req: NextRequest, event: NextFetchEvent) {
+export async function proxy(req: NextRequest, event: NextFetchEvent) {
   const token = req.cookies.get(ACCESS_COOKIE)?.value;
   if (!token) {
     maybeTrackPostView(req, event);

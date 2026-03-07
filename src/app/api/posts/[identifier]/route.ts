@@ -23,7 +23,6 @@ async function uniqueSlug(base: string, excludeId?: string) {
   let attempt = base || "post";
   let suffix = 1;
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const existing = await prisma.post.findUnique({
       where: { slug: attempt },
@@ -52,6 +51,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ identifier:
           id: true,
           title: true,
           slug: true,
+          excerpt: true,
+          published: true,
           content: true,
           videoUrl: true,
           thumbnailUrl: true,
@@ -66,6 +67,9 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ identifier:
     );
 
     if (!post) {
+      throw new ApiError({ status: 404, code: "NOT_FOUND", message: "Post not found." });
+    }
+    if (!post.published && viewer?.role !== "ADMIN") {
       throw new ApiError({ status: 404, code: "NOT_FOUND", message: "Post not found." });
     }
 
@@ -94,7 +98,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ identifier:
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ identifier: string }> }) {
   return withRoute(async () => {
     requireUser(req);
-    const admin = requireAdmin(req);
+    const admin = await requireAdmin(req);
     enforceRateLimit(req, {
       name: "admin-post-update",
       max: 60,
@@ -141,9 +145,11 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ identifie
       data: {
         title: input.title,
         slug,
+        excerpt: input.excerpt ?? (input.content ? input.content.slice(0, 220) : undefined),
         content: input.content,
         videoUrl: input.videoUrl,
         thumbnailUrl: input.thumbnailUrl,
+        published: input.published,
         authorId: admin.id,
         ...(input.tags
           ? {
@@ -158,6 +164,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ identifie
         id: true,
         title: true,
         slug: true,
+        excerpt: true,
+        published: true,
         content: true,
         videoUrl: true,
         thumbnailUrl: true,
@@ -178,7 +186,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ identifie
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ identifier: string }> }) {
   return withRoute(async () => {
     requireUser(req);
-    requireAdmin(req);
+    await requireAdmin(req);
     enforceRateLimit(req, {
       name: "admin-post-delete",
       max: 30,

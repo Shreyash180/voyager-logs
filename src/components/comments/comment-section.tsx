@@ -107,7 +107,7 @@ export function CommentSection({ postId }: { postId: string }) {
         </button>
       </div>
 
-      <form onSubmit={submit} className="rounded-xl border bg-background/60 p-4 space-y-3">
+      <form onSubmit={submit} className="space-y-3 rounded-xl border bg-background/60 p-4">
         <div className="text-xs text-foreground/60">
           {parentId ? (
             <div className="flex items-center justify-between">
@@ -130,19 +130,17 @@ export function CommentSection({ postId }: { postId: string }) {
           required
           rows={4}
           className="w-full resize-y rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/20"
-          placeholder="Share your thoughts…"
+          placeholder="Share your thoughts..."
         />
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         <button className="inline-flex h-10 items-center justify-center rounded-lg bg-foreground px-4 text-sm font-medium text-background">
           Post comment
         </button>
-        <p className="text-xs text-foreground/60">
-          Tip: if posting fails, you may need to login first.
-        </p>
+        <p className="text-xs text-foreground/60">Tip: if posting fails, you may need to login first.</p>
       </form>
 
       {loading ? (
-        <p className="text-sm text-foreground/60">Loading…</p>
+        <p className="text-sm text-foreground/60">Loading...</p>
       ) : comments.length ? (
         <div className="space-y-3">
           {comments.map((c) => (
@@ -155,4 +153,3 @@ export function CommentSection({ postId }: { postId: string }) {
     </section>
   );
 }
-

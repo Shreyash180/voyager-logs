@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
         name: true,
         email: true,
         role: true,
+        avatarUrl: true,
+        lastSeen: true,
         createdAt: true,
       },
     });

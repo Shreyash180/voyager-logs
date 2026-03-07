@@ -13,7 +13,7 @@ export default async function AdminCommentsPage(props: PageProps) {
   const searchParams = new URLSearchParams();
   if (sp.page) searchParams.set("page", sp.page);
   if (sp.q) searchParams.set("q", sp.q);
-  const { page, limit, skip, take } = parsePagination(searchParams);
+  const { page, skip, take } = parsePagination(searchParams);
   const q = sp.q?.trim() ?? "";
 
   const where = q

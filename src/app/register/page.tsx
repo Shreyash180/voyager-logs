@@ -1,4 +1,5 @@
 import { AuthForm } from "@/components/auth/auth-form";
+import Link from "next/link";
 
 export default function RegisterPage() {
   return (
@@ -9,14 +10,14 @@ export default function RegisterPage() {
           Register to join Voyager Logs and interact with posts.
         </p>
       </div>
-      <div className="rounded-xl border bg-background/60 p-4">
+      <div className="glass-panel p-4">
         <AuthForm mode="register" />
       </div>
       <p className="text-sm text-foreground/70">
         Already have an account?{" "}
-        <a href="/login" className="font-medium hover:underline">
+        <Link href="/login" className="font-medium text-cyan-200 hover:underline">
           Login
-        </a>
+        </Link>
         .
       </p>
     </div>

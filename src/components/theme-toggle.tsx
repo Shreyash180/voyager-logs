@@ -24,17 +24,14 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("system");
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
+    return (window.localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system";
+  });
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const initial = stored ?? "system";
-
-    setTheme(initial);
-    applyTheme(initial);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   const handleToggle = () => {
     const nextTheme: Theme =
@@ -44,21 +41,17 @@ export function ThemeToggle() {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEY, nextTheme);
     }
-    applyTheme(nextTheme);
   };
-
-  const isDark = theme === "dark";
 
   return (
     <button
       type="button"
       onClick={handleToggle}
       className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors hover:bg-foreground hover:text-background"
-      aria-label={isDark ? "Use light mode" : "Use dark mode"}
+      aria-label="Toggle theme"
     >
       <span className="h-2 w-2 rounded-full bg-foreground" />
-      <span>{isDark ? "Dark" : "Light"}</span>
+      <span>Theme</span>
     </button>
   );
 }
-

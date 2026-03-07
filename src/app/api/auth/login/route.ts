@@ -60,8 +60,21 @@ export async function POST(req: NextRequest) {
     const refreshToken = signRefreshToken({ id: user.id, role: user.role });
     await setAuthCookies({ accessToken, refreshToken });
 
-    const { passwordHash: _passwordHash, ...safeUser } = user;
-    return { user: safeUser };
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastSeen: new Date() },
+      select: { id: true },
+    });
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+    };
   });
 }
 

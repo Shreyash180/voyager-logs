@@ -1,4 +1,5 @@
 import { ZodError } from "zod";
+import { Prisma } from "@prisma/client";
 
 export type ErrorPayload = {
   code: string;
@@ -20,6 +21,9 @@ export class ApiError extends Error {
 }
 
 export function normalizeError(err: unknown): { status: number; payload: ErrorPayload } {
+  const prismaNormalized = normalizePrismaError(err);
+  if (prismaNormalized) return prismaNormalized;
+
   if (isErrorWithHttpShape(err)) {
     return {
       status: err.status,
@@ -53,6 +57,36 @@ export function normalizeError(err: unknown): { status: number; payload: ErrorPa
   }
 
   return { status: 500, payload: { code: "INTERNAL_ERROR", message: "Unknown error" } };
+}
+
+function normalizePrismaError(
+  err: unknown,
+): { status: number; payload: ErrorPayload } | null {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P1001") {
+      return {
+        status: 503,
+        payload: {
+          code: "DB_UNAVAILABLE",
+          message: "Database is unavailable. Start PostgreSQL and try again.",
+        },
+      };
+    }
+  }
+
+  if (err instanceof Prisma.PrismaClientInitializationError) {
+    if (err.message.includes("Can't reach database server")) {
+      return {
+        status: 503,
+        payload: {
+          code: "DB_UNAVAILABLE",
+          message: "Database is unavailable. Start PostgreSQL and try again.",
+        },
+      };
+    }
+  }
+
+  return null;
 }
 
 function isErrorWithHttpShape(

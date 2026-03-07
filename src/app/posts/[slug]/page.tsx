@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { BookmarkButton } from "@/components/posts/bookmark-button";
 import { LikeButton } from "@/components/posts/like-button";
 import { CommentSection } from "@/components/comments/comment-section";
 import { getBaseUrl } from "@/lib/base-url";
+import { TagPill } from "@/components/ui/tag-pill";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -17,7 +19,9 @@ async function fetchPost(slug: string) {
       id: string;
       title: string;
       slug: string;
+      excerpt?: string | null;
       content: string;
+      published: boolean;
       videoUrl: string | null;
       thumbnailUrl: string | null;
       views: number;
@@ -53,15 +57,14 @@ export default async function PostPage(props: PageProps) {
 
   if (!data) {
     return (
-      <div className="rounded-xl border bg-background/60 p-6">
+      <div className="glass-panel p-6">
         <h1 className="text-xl font-semibold">Post not found</h1>
         <p className="mt-2 text-sm text-foreground/70">
-          The post you are looking for doesn’t exist (or hasn’t been published
-          yet).
+          The post you are looking for does not exist (or has not been published yet).
         </p>
-        <a href="/" className="mt-4 inline-flex text-sm font-medium hover:underline">
+        <Link href="/" className="mt-4 inline-flex text-sm font-medium hover:underline">
           Back to home
-        </a>
+        </Link>
       </div>
     );
   }
@@ -73,18 +76,10 @@ export default async function PostPage(props: PageProps) {
       <header className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           {post.tags.map((t) => (
-            <a
-              key={t.id}
-              href={`/?tag=${encodeURIComponent(t.slug)}`}
-              className="rounded-full border px-2 py-0.5 text-[11px] text-foreground/70 hover:bg-foreground/5"
-            >
-              {t.name}
-            </a>
+            <TagPill key={t.id} name={t.name} href={`/?tag=${encodeURIComponent(t.slug)}`} />
           ))}
         </div>
-        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
-          {post.title}
-        </h1>
+        <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">{post.title}</h1>
         <div className="flex flex-wrap items-center gap-4 text-xs text-foreground/60">
           <span>By {post.author.name ?? "Admin"}</span>
           <span>{new Date(post.createdAt).toLocaleDateString()}</span>
@@ -92,11 +87,7 @@ export default async function PostPage(props: PageProps) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <LikeButton
-            postId={post.id}
-            initialLiked={viewer.liked}
-            initialCount={post._count.likes}
-          />
+          <LikeButton postId={post.id} initialLiked={viewer.liked} initialCount={post._count.likes} />
           <BookmarkButton
             postId={post.id}
             initialBookmarked={viewer.bookmarked}
@@ -106,7 +97,7 @@ export default async function PostPage(props: PageProps) {
       </header>
 
       {post.videoUrl ? (
-        <section className="overflow-hidden rounded-xl border bg-black">
+        <section className="glass-panel overflow-hidden bg-black">
           <div className="aspect-video w-full">
             <iframe
               src={post.videoUrl}
@@ -119,13 +110,13 @@ export default async function PostPage(props: PageProps) {
       ) : null}
 
       {post.thumbnailUrl ? (
-        <section className="overflow-hidden rounded-xl border">
+        <section className="glass-panel overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={post.thumbnailUrl} alt="" className="w-full object-cover" />
         </section>
       ) : null}
 
-      <section className="prose prose-zinc max-w-none dark:prose-invert">
+      <section className="glass-panel p-5">
         <p className="whitespace-pre-wrap">{post.content}</p>
       </section>
 
@@ -133,4 +124,3 @@ export default async function PostPage(props: PageProps) {
     </div>
   );
 }
-

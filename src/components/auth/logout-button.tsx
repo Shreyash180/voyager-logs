@@ -21,7 +21,7 @@ export function LogoutButton() {
       type="button"
       onClick={logout}
       disabled={loading}
-      className="hover:underline disabled:opacity-60"
+      className="border-b border-transparent pb-0.5 text-sm hover:border-cyan-300/70 disabled:opacity-60"
     >
       Logout
     </button>

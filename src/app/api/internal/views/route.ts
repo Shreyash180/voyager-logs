@@ -7,7 +7,7 @@ import { ApiError } from "@/lib/http/errors";
 import { prisma } from "@/lib/prisma";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request";
-import { invalidatePostDetailCache } from "@/lib/cache/posts";
+import { invalidatePostDetailCache, invalidatePostListCache } from "@/lib/cache/posts";
 
 export const runtime = "nodejs";
 
@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     invalidatePostDetailCache(post.slug);
+    invalidatePostListCache();
 
     return { tracked: true };
   });
