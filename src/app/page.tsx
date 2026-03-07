@@ -23,7 +23,24 @@ export default async function Home(props: PageProps) {
   if (tag) url.searchParams.set("tag", tag);
 
   const res = await fetch(url, { cache: "no-store" });
-  const data = (await res.json()) as { posts: PostCardData[]; total: number; hasMore: boolean };
+  let data: { posts: PostCardData[]; total: number; hasMore: boolean } = {
+    posts: [],
+    total: 0,
+    hasMore: false,
+  };
+
+  if (res.ok) {
+    const parsed = await res.json().catch(() => null);
+    if (parsed && typeof parsed === "object") {
+      const value = parsed as Partial<typeof data>;
+      data = {
+        posts: Array.isArray(value.posts) ? value.posts : [],
+        total: typeof value.total === "number" ? value.total : 0,
+        hasMore: Boolean(value.hasMore),
+      };
+    }
+  }
+
   const [user, totalPostsCount, totalUsersCount] = await Promise.all([
     getCurrentUser(),
     prisma.post.count({ where: { published: true } }),

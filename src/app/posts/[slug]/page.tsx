@@ -14,7 +14,9 @@ async function fetchPost(slug: string) {
   const url = new URL(`/api/posts/${encodeURIComponent(slug)}`, baseUrl);
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return null;
-  return (await res.json()) as {
+  const parsed = await res.json().catch(() => null);
+  if (!parsed || typeof parsed !== "object") return null;
+  return parsed as {
     post: {
       id: string;
       title: string;
