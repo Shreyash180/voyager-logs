@@ -74,6 +74,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ identifier
     });
     const input = CommentCreateSchema.parse(json);
 
+    // Honeypot field for bot submissions: treat as accepted and no-op.
+    if (input.website) {
+      return { comment: null };
+    }
+
     if (input.parentId) {
       const parent = await prisma.comment.findUnique({
         where: { id: input.parentId },

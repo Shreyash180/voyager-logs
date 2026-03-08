@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 
 import { BookmarkButton } from "@/components/posts/bookmark-button";
 import { LikeButton } from "@/components/posts/like-button";
-import { CommentSection } from "@/components/comments/comment-section";
 import { getBaseUrl } from "@/lib/base-url";
 import { TagPill } from "@/components/ui/tag-pill";
+
+const CommentSection = dynamic(
+  () => import("@/components/comments/comment-section").then((m) => m.CommentSection),
+  {
+    loading: () => (
+      <section className="space-y-3">
+        <div className="h-4 w-24 animate-pulse rounded bg-foreground/15" />
+        <div className="h-28 animate-pulse rounded-xl border bg-foreground/8" />
+      </section>
+    ),
+  },
+);
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -114,7 +126,13 @@ export default async function PostPage(props: PageProps) {
       {post.thumbnailUrl ? (
         <section className="glass-panel overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.thumbnailUrl} alt="" className="w-full object-cover" />
+          <img
+            src={post.thumbnailUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="w-full object-cover"
+          />
         </section>
       ) : null}
 

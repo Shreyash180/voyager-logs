@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
+import { useToast } from "@/components/ui/toast-provider";
 
 type CommentNode = {
   id: string;
@@ -11,7 +12,7 @@ type CommentNode = {
   children: CommentNode[];
 };
 
-function CommentItem({
+const CommentItem = memo(function CommentItem({
   node,
   depth,
   onReply,
@@ -45,51 +46,67 @@ function CommentItem({
       ) : null}
     </div>
   );
-}
+});
 
 export function CommentSection({ postId }: { postId: string }) {
+  const { push } = useToast();
   const [comments, setComments] = useState<CommentNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState("");
   const [parentId, setParentId] = useState<string | null>(null);
+  const [website, setWebsite] = useState("");
+  const [cooldownUntil, setCooldownUntil] = useState(0);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const res = await fetch(`/api/posts/${postId}/comments`, { cache: "no-store" });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      setError(data?.error?.message ?? "Failed to load comments.");
+    const res = await fetch(`/api/posts/${postId}/comments`, { cache: "no-store" }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (!res || !res.ok) {
+      const message = data?.error?.message ?? "Failed to load comments.";
+      setError(message);
+      push(message, "error");
       setLoading(false);
       return;
     }
     setComments(data.comments ?? []);
     setLoading(false);
-  };
+  }, [postId, push]);
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postId]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (Date.now() < cooldownUntil) {
+      const message = "Please wait a few seconds before posting again.";
+      setError(message);
+      push(message, "error");
+      return;
+    }
 
     const res = await fetch(`/api/posts/${postId}/comments`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ content, parentId }),
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      setError(data?.error?.message ?? "Failed to post comment.");
+      body: JSON.stringify({ content, parentId, website }),
+    }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (!res || !res.ok) {
+      const message = data?.error?.message ?? "Failed to post comment.";
+      setError(message);
+      push(message, "error");
       return;
     }
 
     setContent("");
+    setWebsite("");
     setParentId(null);
+    setCooldownUntil(Date.now() + 3_000);
+    push("Comment posted.", "success");
     await load();
   };
 
@@ -131,6 +148,16 @@ export function CommentSection({ postId }: { postId: string }) {
           rows={4}
           className="w-full resize-y rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-foreground/20"
           placeholder="Share your thoughts..."
+        />
+        <input
+          type="text"
+          name="website"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+          autoComplete="off"
+          tabIndex={-1}
+          aria-hidden="true"
+          className="hidden"
         />
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         <button className="inline-flex h-10 items-center justify-center rounded-lg bg-foreground px-4 text-sm font-medium text-background">

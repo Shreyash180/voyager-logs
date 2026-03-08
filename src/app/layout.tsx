@@ -8,6 +8,8 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { NeonButton } from "@/components/ui/neon-button";
 import { Avatar } from "@/components/ui/avatar";
 import { AuthHeartbeat } from "@/components/auth/auth-heartbeat";
+import { ToastProvider } from "@/components/ui/toast-provider";
+import { HomeLink } from "@/components/nav/home-link";
 
 export const metadata: Metadata = {
   title: "Voyager Logs",
@@ -34,9 +36,7 @@ export default async function RootLayout({
               <span className="text-sm text-foreground/65">Logs</span>
             </div>
             <nav className="flex items-center gap-3 text-sm">
-              <Link href="/" className="border-b border-transparent pb-0.5 hover:border-cyan-300/70">
-                Home
-              </Link>
+              <HomeLink />
               {user ? (
                 <>
                   <Link href="/profile" className="border-b border-transparent pb-0.5 hover:border-cyan-300/70">
@@ -76,8 +76,10 @@ export default async function RootLayout({
           </div>
         </header>
         <main className="page-main">
-          {user ? <AuthHeartbeat /> : null}
-          <div className="mx-auto max-w-5xl px-4 py-8">{children}</div>
+          <ToastProvider>
+            {user ? <AuthHeartbeat /> : null}
+            <div className="mx-auto max-w-5xl px-4 py-8">{children}</div>
+          </ToastProvider>
         </main>
         <footer className="page-footer border-t border-white/10 bg-[color:var(--surface-strong)]/85">
           <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 text-xs text-foreground/60">

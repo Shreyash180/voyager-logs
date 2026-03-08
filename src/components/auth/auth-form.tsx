@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { NeonButton } from "@/components/ui/neon-button";
+import { useToast } from "@/components/ui/toast-provider";
 
 type Mode = "login" | "register";
 type FieldErrors = Partial<Record<"name" | "email" | "password", string>>;
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
+  const { push } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -37,11 +39,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(payload),
-    });
+    }).catch(() => null);
 
-    const data = await res.json().catch(() => null);
+    const data = await res?.json().catch(() => null);
 
-    if (!res.ok) {
+    if (!res || !res.ok) {
       const nextFieldErrors: FieldErrors = {};
       const serverFieldErrors = data?.error?.details?.fieldErrors as
         | Record<string, string[]>
@@ -56,14 +58,18 @@ export function AuthForm({ mode }: { mode: Mode }) {
       }
 
       setFieldErrors(nextFieldErrors);
-      setError(data?.error?.message ?? Object.values(nextFieldErrors)[0] ?? "Request failed.");
+      const message = data?.error?.message ?? Object.values(nextFieldErrors)[0] ?? "Request failed.";
+      setError(message);
+      push(message, "error");
       setLoading(false);
       return;
     }
 
     if (mode === "register") {
+      push("Account created. Please login.", "success");
       router.push("/login");
     } else {
+      push("Login successful.", "success");
       router.push("/");
       router.refresh();
     }

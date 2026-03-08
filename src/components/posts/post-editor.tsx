@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { NeonButton } from "@/components/ui/neon-button";
 import { ThumbnailUploader } from "@/components/posts/thumbnail-uploader";
+import { useToast } from "@/components/ui/toast-provider";
 
 type Mode = "create" | "edit";
 
@@ -22,6 +23,7 @@ export function PostEditor(props: {
   };
 }) {
   const router = useRouter();
+  const { push } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +58,15 @@ export function PostEditor(props: {
     setError(null);
 
     if (title.trim().length < 3) {
-      setError("Title should be at least 3 characters.");
+      const message = "Title should be at least 3 characters.";
+      setError(message);
+      push(message, "error");
       return;
     }
     if (content.trim().length < 10) {
-      setError("Content should be at least 10 characters.");
+      const message = "Content should be at least 10 characters.";
+      setError(message);
+      push(message, "error");
       return;
     }
 
@@ -85,20 +91,23 @@ export function PostEditor(props: {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(payload),
-          })
+          }).catch(() => null)
         : await fetch(`/api/posts/${props.postId}`, {
             method: "PATCH",
             headers: { "content-type": "application/json" },
             body: JSON.stringify(payload),
-          });
+          }).catch(() => null);
 
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      setError(data?.error?.message ?? "Save failed.");
+    const data = await res?.json().catch(() => null);
+    if (!res || !res.ok) {
+      const message = data?.error?.message ?? "Save failed.";
+      setError(message);
+      push(message, "error");
       setLoading(false);
       return;
     }
 
+    push(props.mode === "create" ? "Post created." : "Post updated.", "success");
     router.push("/admin");
     router.refresh();
     setLoading(false);
@@ -110,14 +119,17 @@ export function PostEditor(props: {
     setLoading(true);
     setError(null);
 
-    const res = await fetch(`/api/posts/${props.postId}`, { method: "DELETE" });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      setError(data?.error?.message ?? "Delete failed.");
+    const res = await fetch(`/api/posts/${props.postId}`, { method: "DELETE" }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (!res || !res.ok) {
+      const message = data?.error?.message ?? "Delete failed.";
+      setError(message);
+      push(message, "error");
       setLoading(false);
       return;
     }
 
+    push("Post deleted.", "success");
     router.push("/admin");
     router.refresh();
     setLoading(false);
@@ -126,11 +138,15 @@ export function PostEditor(props: {
   const uploadThumbnail = async () => {
     if (!thumbnailFile || uploading) return;
     if (!thumbnailFile.type.startsWith("image/")) {
-      setError("Only image files are allowed.");
+      const message = "Only image files are allowed.";
+      setError(message);
+      push(message, "error");
       return;
     }
     if (thumbnailFile.size > 5 * 1024 * 1024) {
-      setError("Thumbnail must be 5MB or smaller.");
+      const message = "Thumbnail must be 5MB or smaller.";
+      setError(message);
+      push(message, "error");
       return;
     }
 
@@ -144,22 +160,26 @@ export function PostEditor(props: {
       const res = await fetch("/api/admin/uploads", {
         method: "POST",
         body: form,
-      });
-      const data = await res.json().catch(() => null);
+      }).catch(() => null);
+      const data = await res?.json().catch(() => null);
 
-      if (!res.ok) {
-        setError(data?.error?.message ?? "Upload failed.");
+      if (!res || !res.ok) {
+        const message = data?.error?.message ?? "Upload failed.";
+        setError(message);
+        push(message, "error");
         setUploading(false);
         return;
       }
 
       setThumbnailUrl(data?.image?.url ?? "");
       setThumbnailFile(null);
+      push("Thumbnail uploaded.", "success");
       setUploading(false);
       return;
-    }
-    catch {
-      setError("Upload request failed. Check server status and try again.");
+    } catch {
+      const message = "Upload request failed. Check server status and try again.";
+      setError(message);
+      push(message, "error");
       setUploading(false);
     }
   };

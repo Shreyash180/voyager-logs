@@ -41,11 +41,7 @@ export default async function Home(props: PageProps) {
     }
   }
 
-  const [user, totalPostsCount, totalUsersCount] = await Promise.all([
-    getCurrentUser(),
-    prisma.post.count({ where: { published: true } }),
-    prisma.user.count(),
-  ]);
+  const [user, stats] = await Promise.all([getCurrentUser(), getSiteStats()]);
 
   const currentPage = Number(page) || 1;
   const todayLabel = new Intl.DateTimeFormat("en-US", {
@@ -58,8 +54,8 @@ export default async function Home(props: PageProps) {
   return (
     <div className="space-y-6">
       <Hero
-        totalPosts={totalPostsCount}
-        totalUsers={totalUsersCount}
+        totalPosts={stats.totalPostsCount}
+        totalUsers={stats.totalUsersCount}
         todayLabel={todayLabel}
         canWrite={Boolean(user && user.role === "ADMIN")}
       />
@@ -132,4 +128,17 @@ export default async function Home(props: PageProps) {
       </section>
     </div>
   );
+}
+
+async function getSiteStats() {
+  try {
+    const [totalPostsCount, totalUsersCount] = await Promise.all([
+      prisma.post.count({ where: { published: true } }),
+      prisma.user.count(),
+    ]);
+
+    return { totalPostsCount, totalUsersCount };
+  } catch {
+    return { totalPostsCount: 0, totalUsersCount: 0 };
+  }
 }

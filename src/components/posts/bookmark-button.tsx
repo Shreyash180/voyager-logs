@@ -1,38 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useToast } from "@/components/ui/toast-provider";
 
 export function BookmarkButton(props: {
   postId: string;
   initialBookmarked: boolean;
   initialCount: number;
 }) {
+  const { push } = useToast();
   const [bookmarked, setBookmarked] = useState(props.initialBookmarked);
   const [count, setCount] = useState(props.initialCount);
   const [loading, setLoading] = useState(false);
 
-  const toggle = async () => {
+  const toggle = useCallback(async () => {
     if (loading) return;
     setLoading(true);
 
+    const prevBookmarked = bookmarked;
+    const prevCount = count;
     const next = !bookmarked;
     setBookmarked(next);
     setCount((c) => c + (next ? 1 : -1));
 
     const res = await fetch(`/api/posts/${props.postId}/bookmark`, {
       method: next ? "POST" : "DELETE",
-    });
+    }).catch(() => null);
 
-    if (!res.ok) {
-      setBookmarked(bookmarked);
-      setCount(props.initialCount);
+    if (!res || !res.ok) {
+      setBookmarked(prevBookmarked);
+      setCount(prevCount);
+      push("Could not update bookmark right now.", "error");
     } else {
       const data = (await res.json().catch(() => null)) as { bookmarks?: number } | null;
       if (data?.bookmarks !== undefined) setCount(data.bookmarks);
     }
 
     setLoading(false);
-  };
+  }, [bookmarked, count, loading, props.postId, push]);
 
   return (
     <button
