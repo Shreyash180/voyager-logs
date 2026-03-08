@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
 import { ThemeToggle } from "../components/theme-toggle";
@@ -85,6 +86,7 @@ export default async function RootLayout({
             <span>Built with Next.js & PostgreSQL.</span>
           </div>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
