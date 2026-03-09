@@ -1,20 +1,42 @@
 import { prisma } from "@/lib/prisma";
+import { SubmissionsPanel } from "@/components/admin/submissions-panel";
 
 export const runtime = "nodejs";
 
 export default async function AdminPage() {
-  const posts = await prisma.post.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      views: true,
-      createdAt: true,
-      _count: { select: { likes: true, comments: true, bookmarks: true } },
-    },
-  });
+  const [posts, submissions] = await Promise.all([
+    prisma.post.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        views: true,
+        createdAt: true,
+        _count: { select: { likes: true, comments: true, bookmarks: true } },
+      },
+    }),
+    prisma.post.findMany({
+      where: {
+        author: { role: "USER" },
+        isApproved: false,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        title: true,
+        excerpt: true,
+        content: true,
+        isPublic: true,
+        isApproved: true,
+        publishedByAdmin: true,
+        createdAt: true,
+        author: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -91,6 +113,8 @@ export default async function AdminPage() {
           </table>
         </div>
       </section>
+
+      <SubmissionsPanel initial={submissions} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
 import { withRoute } from "@/lib/http/route";
+import { ApiError } from "@/lib/http/errors";
 import { requireUser } from "@/lib/auth/require";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { invalidatePostDetailCache, invalidatePostListCache } from "@/lib/cache/posts";
@@ -17,6 +18,18 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ identifier
     const user = requireUser(req);
     const { identifier } = await ctx.params;
     const pid = IdentifierSchema.parse(identifier);
+    const post = await prisma.post.findUnique({
+      where: { id: pid },
+      select: { authorId: true, isPublic: true, isApproved: true, published: true },
+    });
+    if (!post) throw new ApiError({ status: 404, code: "NOT_FOUND", message: "Post not found." });
+    const canInteract =
+      (post.isPublic && post.isApproved && post.published) ||
+      post.authorId === user.id ||
+      user.role === "ADMIN";
+    if (!canInteract) {
+      throw new ApiError({ status: 403, code: "FORBIDDEN", message: "Post access denied." });
+    }
 
     await prisma.bookmark.upsert({
       where: { userId_postId: { userId: user.id, postId: pid } },
@@ -24,12 +37,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ identifier
       create: { userId: user.id, postId: pid },
     });
 
-    const [count, post] = await Promise.all([
+    const [count, postMeta] = await Promise.all([
       prisma.bookmark.count({ where: { postId: pid } }),
       prisma.post.findUnique({ where: { id: pid }, select: { slug: true } }),
     ]);
-    if (post) {
-      invalidatePostDetailCache(post.slug);
+    if (postMeta) {
+      invalidatePostDetailCache(postMeta.slug);
       invalidatePostListCache();
     }
     return { ok: true, bookmarks: count };
@@ -42,14 +55,26 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ identifi
     const user = requireUser(req);
     const { identifier } = await ctx.params;
     const pid = IdentifierSchema.parse(identifier);
+    const post = await prisma.post.findUnique({
+      where: { id: pid },
+      select: { authorId: true, isPublic: true, isApproved: true, published: true },
+    });
+    if (!post) throw new ApiError({ status: 404, code: "NOT_FOUND", message: "Post not found." });
+    const canInteract =
+      (post.isPublic && post.isApproved && post.published) ||
+      post.authorId === user.id ||
+      user.role === "ADMIN";
+    if (!canInteract) {
+      throw new ApiError({ status: 403, code: "FORBIDDEN", message: "Post access denied." });
+    }
 
     await prisma.bookmark.deleteMany({ where: { userId: user.id, postId: pid } });
-    const [count, post] = await Promise.all([
+    const [count, postMeta] = await Promise.all([
       prisma.bookmark.count({ where: { postId: pid } }),
       prisma.post.findUnique({ where: { id: pid }, select: { slug: true } }),
     ]);
-    if (post) {
-      invalidatePostDetailCache(post.slug);
+    if (postMeta) {
+      invalidatePostDetailCache(postMeta.slug);
       invalidatePostListCache();
     }
     return { ok: true, bookmarks: count };

@@ -12,6 +12,9 @@ type Mode = "create" | "edit";
 export function PostEditor(props: {
   mode: Mode;
   postId?: string;
+  redirectPath?: string;
+  showPublishedToggle?: boolean;
+  publishedLabel?: string;
   initial?: {
     title: string;
     excerpt?: string | null;
@@ -108,7 +111,7 @@ export function PostEditor(props: {
     }
 
     push(props.mode === "create" ? "Post created." : "Post updated.", "success");
-    router.push("/admin");
+    router.push(props.redirectPath ?? "/admin");
     router.refresh();
     setLoading(false);
   };
@@ -130,7 +133,7 @@ export function PostEditor(props: {
     }
 
     push("Post deleted.", "success");
-    router.push("/admin");
+    router.push(props.redirectPath ?? "/admin");
     router.refresh();
     setLoading(false);
   };
@@ -278,15 +281,17 @@ export function PostEditor(props: {
         />
       </div>
 
-      <label className="inline-flex items-center gap-2 text-sm text-foreground/80">
-        <input
-          type="checkbox"
-          checked={published}
-          onChange={(e) => setPublished(e.target.checked)}
-          className="h-4 w-4 rounded border-white/30 bg-black/20"
-        />
-        Published
-      </label>
+      {props.showPublishedToggle ?? true ? (
+        <label className="inline-flex items-center gap-2 text-sm text-foreground/80">
+          <input
+            type="checkbox"
+            checked={published}
+            onChange={(e) => setPublished(e.target.checked)}
+            className="h-4 w-4 rounded border-white/30 bg-black/20"
+          />
+          {props.publishedLabel ?? "Published"}
+        </label>
+      ) : null}
 
       {error ? <p className="rounded-lg border border-red-400/30 bg-red-500/10 p-2 text-sm text-red-200">{error}</p> : null}
 

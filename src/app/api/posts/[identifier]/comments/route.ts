@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { withRoute } from "@/lib/http/route";
 import { ApiError } from "@/lib/http/errors";
-import { requireUser } from "@/lib/auth/require";
+import { getUserFromRequest, requireUser } from "@/lib/auth/require";
 import { CommentCreateSchema } from "@/lib/validation/comments";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { invalidatePostDetailCache, invalidatePostListCache } from "@/lib/cache/posts";
@@ -41,10 +41,25 @@ function buildTree(items: Omit<CommentNode, "children">[]) {
   return roots;
 }
 
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ identifier: string }> }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ identifier: string }> }) {
   return withRoute(async () => {
     const { identifier } = await ctx.params;
     const pid = IdentifierSchema.parse(identifier);
+    const viewer = getUserFromRequest(req);
+
+    const post = await prisma.post.findUnique({
+      where: { id: pid },
+      select: { authorId: true, isPublic: true, isApproved: true, published: true },
+    });
+    if (!post) throw new ApiError({ status: 404, code: "NOT_FOUND", message: "Post not found." });
+
+    const canView =
+      (post.isPublic && post.isApproved && post.published) ||
+      post.authorId === viewer?.id ||
+      viewer?.role === "ADMIN";
+    if (!canView) {
+      throw new ApiError({ status: 403, code: "FORBIDDEN", message: "Post access denied." });
+    }
 
     const comments = await prisma.comment.findMany({
       where: { postId: pid },
@@ -68,6 +83,19 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ identifier
     const user = requireUser(req);
     const { identifier } = await ctx.params;
     const pid = IdentifierSchema.parse(identifier);
+
+    const postAccess = await prisma.post.findUnique({
+      where: { id: pid },
+      select: { slug: true, authorId: true, isPublic: true, isApproved: true, published: true },
+    });
+    if (!postAccess) throw new ApiError({ status: 404, code: "NOT_FOUND", message: "Post not found." });
+    const canComment =
+      (postAccess.isPublic && postAccess.isApproved && postAccess.published) ||
+      postAccess.authorId === user.id ||
+      user.role === "ADMIN";
+    if (!canComment) {
+      throw new ApiError({ status: 403, code: "FORBIDDEN", message: "Post access denied." });
+    }
 
     const json = await req.json().catch(() => {
       throw new ApiError({ status: 400, code: "INVALID_JSON", message: "Invalid JSON body." });
@@ -109,11 +137,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ identifier
       },
     });
 
-    const post = await prisma.post.findUnique({ where: { id: pid }, select: { slug: true } });
-    if (post) {
-      invalidatePostDetailCache(post.slug);
-      invalidatePostListCache();
-    }
+    invalidatePostDetailCache(postAccess.slug);
+    invalidatePostListCache();
 
     return { comment };
   }, { status: 201 });

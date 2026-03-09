@@ -6,6 +6,7 @@ import { BookmarkButton } from "@/components/posts/bookmark-button";
 import { LikeButton } from "@/components/posts/like-button";
 import { getBaseUrl } from "@/lib/base-url";
 import { TagPill } from "@/components/ui/tag-pill";
+import { PostViewTracker } from "@/components/posts/post-view-tracker";
 
 const CommentSection = dynamic(
   () => import("@/components/comments/comment-section").then((m) => m.CommentSection),
@@ -87,6 +88,7 @@ export default async function PostPage(props: PageProps) {
 
   return (
     <div className="space-y-8">
+      <PostViewTracker slug={post.slug} />
       <header className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           {post.tags.map((t) => (

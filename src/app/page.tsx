@@ -57,7 +57,9 @@ export default async function Home(props: PageProps) {
         totalPosts={stats.totalPostsCount}
         totalUsers={stats.totalUsersCount}
         todayLabel={todayLabel}
-        canWrite={Boolean(user && user.role === "ADMIN")}
+        startWritingHref={
+          !user ? "/login" : user.role === "ADMIN" ? "/admin/posts/new" : "/dashboard/private-logs/new"
+        }
       />
 
       <section id="explore" className="space-y-3">
@@ -133,7 +135,7 @@ export default async function Home(props: PageProps) {
 async function getSiteStats() {
   try {
     const [totalPostsCount, totalUsersCount] = await Promise.all([
-      prisma.post.count({ where: { published: true } }),
+      prisma.post.count({ where: { published: true, isPublic: true, isApproved: true } }),
       prisma.user.count(),
     ]);
 

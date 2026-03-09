@@ -48,6 +48,9 @@ model Post {
   videoUrl     String?
   thumbnailUrl String?
   published    Boolean    @default(true)
+  isPublic     Boolean    @default(false)
+  isApproved   Boolean    @default(false)
+  publishedByAdmin Boolean @default(false)
   views        Int        @default(0)
   author       User       @relation(fields: [authorId], references: [id])
   authorId     String
@@ -63,6 +66,9 @@ model Post {
   @@index([createdAt])
   @@index([title])
   @@index([authorId])
+  @@index([isPublic])
+  @@index([isApproved])
+  @@index([authorId, isPublic, createdAt])
   @@index([published, createdAt])
 }
 

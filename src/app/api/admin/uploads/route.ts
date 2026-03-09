@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server";
 import crypto from "node:crypto";
 
+import { prisma } from "@/lib/prisma";
 import { withRoute } from "@/lib/http/route";
 import { ApiError } from "@/lib/http/errors";
-import { requireAdmin } from "@/lib/auth/require";
+import { requireUser } from "@/lib/auth/require";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { getServerEnv } from "@/lib/config/server";
 
@@ -23,11 +24,20 @@ function buildCloudinarySignature(params: Record<string, string>, apiSecret: str
 
 export async function POST(req: NextRequest) {
   return withRoute(async () => {
-    await requireAdmin(req);
+    const auth = requireUser(req);
+    const actor = await prisma.user.findUnique({
+      where: { id: auth.id },
+      select: { id: true, status: true, role: true },
+    });
+    if (!actor || actor.status !== "ACTIVE") {
+      throw new ApiError({ status: 401, code: "UNAUTHORIZED", message: "Login required." });
+    }
+
     enforceRateLimit(req, {
-      name: "admin-upload-thumbnail",
-      max: 30,
+      name: actor.role === "ADMIN" ? "admin-upload-thumbnail" : "user-upload-thumbnail",
+      max: actor.role === "ADMIN" ? 30 : 20,
       windowMs: 10 * 60 * 1000,
+      key: `user:${actor.id}`,
     });
 
     const env = getServerEnv();

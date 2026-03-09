@@ -8,13 +8,12 @@ import { prisma } from "@/lib/prisma";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request";
 import { invalidatePostDetailCache, invalidatePostListCache } from "@/lib/cache/posts";
+import { getUserFromRequest } from "@/lib/auth/require";
 
 export const runtime = "nodejs";
 
 const BodySchema = z.object({
   slug: z.string().min(1).max(120),
-  userId: z.string().uuid().nullable().optional(),
-  ip: z.string().min(1).max(100).optional(),
 });
 
 const VIEW_DEDUPE_WINDOW_HOURS = 6;
@@ -26,12 +25,6 @@ function hashIp(ip: string) {
 
 export async function POST(req: NextRequest) {
   return withRoute(async () => {
-    const expectedKey = process.env.INTERNAL_API_KEY ?? process.env.JWT_ACCESS_SECRET;
-    const key = req.headers.get("x-internal-key");
-    if (!expectedKey || key !== expectedKey) {
-      throw new ApiError({ status: 401, code: "UNAUTHORIZED", message: "Invalid internal key." });
-    }
-
     enforceRateLimit(req, {
       name: "internal-view-tracking",
       max: 300,
@@ -43,15 +36,23 @@ export async function POST(req: NextRequest) {
       throw new ApiError({ status: 400, code: "INVALID_JSON", message: "Invalid JSON body." });
     });
     const input = BodySchema.parse(json);
+    const viewer = getUserFromRequest(req);
 
     const post = await prisma.post.findUnique({
       where: { slug: input.slug },
-      select: { id: true, slug: true },
+      select: { id: true, slug: true, authorId: true, isPublic: true, isApproved: true, published: true },
     });
     if (!post) return { tracked: false, reason: "POST_NOT_FOUND" };
 
-    const ipHash = input.ip ? hashIp(input.ip) : null;
-    if (!input.userId && !ipHash) {
+    const ipHash = hashIp(getClientIp(req));
+    const actorUserId = viewer?.id ?? null;
+
+    const canView = post.isPublic && post.isApproved && post.published;
+    if (!canView && actorUserId !== post.authorId && viewer?.role !== "ADMIN") {
+      throw new ApiError({ status: 403, code: "FORBIDDEN", message: "Post access denied." });
+    }
+
+    if (!actorUserId && !ipHash) {
       return { tracked: false, reason: "MISSING_ACTOR" };
     }
 
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
       where: {
         postId: post.id,
         createdAt: { gte: dedupeAfter },
-        ...(input.userId ? { userId: input.userId } : { ipHash: ipHash! }),
+        ...(actorUserId ? { userId: actorUserId } : { ipHash }),
       },
       select: { id: true },
     });
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
       prisma.postView.create({
         data: {
           postId: post.id,
-          userId: input.userId ?? null,
+          userId: actorUserId,
           ipHash,
         },
       }),

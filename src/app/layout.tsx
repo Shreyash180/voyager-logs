@@ -49,7 +49,14 @@ export default async function RootLayout({
                     >
                       Admin
                     </Link>
-                  ) : null}
+                  ) : (
+                    <Link
+                      href="/dashboard/private-logs"
+                      className="hidden border-b border-transparent pb-0.5 hover:border-cyan-300/70 md:inline"
+                    >
+                      Your Private Logs
+                    </Link>
+                  )}
                   {user.role === "ADMIN" ? (
                     <NeonButton href="/admin/posts/new" className="hidden h-9 px-3 text-xs sm:inline-flex">
                       Quick Create

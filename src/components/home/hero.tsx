@@ -4,12 +4,12 @@ export function Hero({
   totalPosts,
   totalUsers,
   todayLabel,
-  canWrite,
+  startWritingHref,
 }: {
   totalPosts: number;
   totalUsers: number;
   todayLabel: string;
-  canWrite: boolean;
+  startWritingHref: string;
 }) {
   return (
     <section className="hero-border">
@@ -24,7 +24,7 @@ export function Hero({
             Every explorer leaves a trace. Record your journeys, reflections, and discoveries.
           </p>
           <div className="flex flex-wrap gap-3 pt-1">
-            <NeonButton href={canWrite ? "/admin/posts/new" : "/login"}>Start Writing</NeonButton>
+            <NeonButton href={startWritingHref}>Start Writing</NeonButton>
             <NeonButton href="/#explore" variant="outline">
               Explore Logs
             </NeonButton>
