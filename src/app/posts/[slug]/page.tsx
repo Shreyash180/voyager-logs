@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { cookies } from "next/headers";
 
 import { BookmarkButton } from "@/components/posts/bookmark-button";
 import { LikeButton } from "@/components/posts/like-button";
@@ -22,10 +23,19 @@ const CommentSection = dynamic(
 
 type PageProps = { params: Promise<{ slug: string }> };
 
-async function fetchPost(slug: string) {
+async function fetchPost(slug: string, opts?: { includeAuth?: boolean }) {
   const baseUrl = await getBaseUrl();
   const url = new URL(`/api/posts/${encodeURIComponent(slug)}`, baseUrl);
-  const res = await fetch(url, { cache: "no-store" });
+  const requestHeaders = new Headers();
+  if (opts?.includeAuth) {
+    const cookieHeader = (await cookies()).toString();
+    if (cookieHeader) requestHeaders.set("cookie", cookieHeader);
+  }
+
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: requestHeaders,
+  });
   if (!res.ok) return null;
   const parsed = await res.json().catch(() => null);
   if (!parsed || typeof parsed !== "object") return null;
@@ -68,7 +78,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
 export default async function PostPage(props: PageProps) {
   const { slug } = await props.params;
-  const data = await fetchPost(slug);
+  const data = await fetchPost(slug, { includeAuth: true });
 
   if (!data) {
     return (
