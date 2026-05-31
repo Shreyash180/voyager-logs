@@ -8,6 +8,8 @@ import { LikeButton } from "@/components/posts/like-button";
 import { getBaseUrl } from "@/lib/base-url";
 import { TagPill } from "@/components/ui/tag-pill";
 import { PostViewTracker } from "@/components/posts/post-view-tracker";
+import { MarkdownRenderer } from "@/components/posts/markdown-renderer";
+import { normalizeLegacyPostContent } from "@/lib/markdown";
 
 const CommentSection = dynamic(
   () => import("@/components/comments/comment-section").then((m) => m.CommentSection),
@@ -149,7 +151,7 @@ export default async function PostPage(props: PageProps) {
       ) : null}
 
       <section className="glass-panel p-5">
-        <p className="whitespace-pre-wrap">{post.content}</p>
+        <MarkdownRenderer content={normalizeLegacyPostContent(post.content)} />
       </section>
 
       <CommentSection postId={post.id} />

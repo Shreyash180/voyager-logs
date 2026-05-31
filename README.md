@@ -7,6 +7,7 @@ Voyager Logs is a full-stack personal vlog platform built with Next.js App Route
 - User auth (register/login/logout), likes, comments, bookmarks
 - Admin dashboard for post and comment management
 - API handlers under `src/app/api/*` (Node runtime)
+- Rich markdown content formatting for blog posts
 
 ## Stack
 - Frontend: Next.js 16, React 19, TypeScript, Tailwind CSS
@@ -14,6 +15,7 @@ Voyager Logs is a full-stack personal vlog platform built with Next.js App Route
 - Database: PostgreSQL + Prisma ORM
 - Auth: JWT access/refresh cookies (`httpOnly`)
 - Media: Cloudinary signed upload flow
+- Content rendering: `react-markdown`
 
 ## Recommended Project Structure
 ```text
@@ -40,9 +42,9 @@ public/
 ```bash
 npm install
 ```
-2. Create env file from example:
+2. Create a local env file:
 ```bash
-cp .env.example .env.local
+New-Item .env.local
 ```
 3. Set local database URL and secrets in `.env.local`.
 4. Generate Prisma client:
@@ -59,7 +61,7 @@ npm run dev
 ```
 
 ## Environment Variables
-Use `.env.example` as the source of truth. Required keys:
+Required keys:
 - `DATABASE_URL`
 - `NEXT_PUBLIC_SITE_URL`
 - `JWT_ACCESS_SECRET`
@@ -116,7 +118,7 @@ If build fails, check:
 3. Framework preset: Next.js.
 4. Build command: `npm run build`
 5. Install command: `npm install`
-6. Add all env vars from `.env.example` in Vercel Project Settings.
+6. Add all required env vars in Vercel Project Settings.
 7. Set `DATABASE_URL` to Neon/Supabase production URL.
 8. Deploy.
 9. Run `prisma migrate deploy` in CI or release job.
@@ -146,6 +148,26 @@ Current:
 Optional:
 - add Sentry DSN and capture API/runtime exceptions
 - add uptime monitor to `/api/health`
+
+## Content Formatting (Markdown)
+
+Blog posts support **Markdown formatting** for rich, professional content.
+
+**For content creators:**
+- Write posts using markdown syntax
+- See formatted output when published
+- Syntax guide available in the post editor
+
+**Supported features:**
+- Headings (# through ###)
+- Bold, italic, combined emphasis
+- Unordered and ordered lists
+- Code blocks with syntax highlighting
+- Blockquotes
+- Links
+- Horizontal rules
+
+The post editor includes a compact markdown syntax guide.
 
 ## How To Review
 1. Register user and login.

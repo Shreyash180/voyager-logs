@@ -271,14 +271,30 @@ export function PostEditor(props: {
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium text-foreground/80">Content</label>
+        <label className="text-xs font-medium text-foreground/80">Content (Markdown supported)</label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           required
           rows={12}
+          placeholder="Use markdown formatting:&#10;# Heading 1&#10;## Heading 2&#10;**bold** or __bold__&#10;*italic* or _italic_&#10;- List item&#10;1. Numbered item&#10;> Quote&#10;`code`&#10;[Link](url)"
           className="w-full resize-y rounded-xl border border-white/15 bg-black/20 px-3 py-2 text-sm outline-none focus:border-cyan-300/55 focus:ring-2 focus:ring-cyan-300/20"
         />
+        <details className="mt-2 text-xs text-foreground/70">
+          <summary className="cursor-pointer font-medium text-foreground/80 hover:text-foreground">
+            Markdown Syntax Guide
+          </summary>
+          <div className="mt-2 space-y-1 rounded-lg bg-black/40 p-3 text-xs">
+            <p><code className="bg-black/60 px-1 rounded"># Heading 1</code> through <code className="bg-black/60 px-1 rounded">### Heading 3</code></p>
+            <p><code className="bg-black/60 px-1 rounded">**bold**</code> or <code className="bg-black/60 px-1 rounded">__bold__</code></p>
+            <p><code className="bg-black/60 px-1 rounded">*italic*</code> or <code className="bg-black/60 px-1 rounded">_italic_</code></p>
+            <p><code className="bg-black/60 px-1 rounded">- item</code> for unordered lists</p>
+            <p><code className="bg-black/60 px-1 rounded">1. item</code> for numbered lists</p>
+            <p><code className="bg-black/60 px-1 rounded">&gt; quote</code> for blockquotes</p>
+            <p><code className="bg-black/60 px-1 rounded">`code`</code> for inline code, <code className="bg-black/60 px-1 rounded">```code block```</code> for blocks</p>
+            <p><code className="bg-black/60 px-1 rounded">[text](url)</code> for links</p>
+          </div>
+        </details>
       </div>
 
       {props.showPublishedToggle ?? true ? (

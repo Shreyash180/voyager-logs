@@ -9,7 +9,7 @@
 ## Environment Variables
 - [ ] All required vars are set in Vercel
 - [ ] Secrets are strong and unique in production
-- [ ] `.env.example` is up to date
+- [ ] Required env vars are documented in `README.md`
 - [ ] No real secret is committed in Git history
 
 ## Database (Neon/Supabase)

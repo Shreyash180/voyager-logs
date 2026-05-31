@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { PostEditor } from "@/components/posts/post-editor";
 import { prisma } from "@/lib/prisma";
+import { normalizeLegacyPostContent } from "@/lib/markdown";
 
 export const runtime = "nodejs";
 
@@ -39,7 +40,7 @@ export default async function EditPostPage(props: { params: Promise<{ id: string
           initial={{
             title: post.title,
             excerpt: post.excerpt,
-            content: post.content,
+            content: normalizeLegacyPostContent(post.content),
             videoUrl: post.videoUrl,
             thumbnailUrl: post.thumbnailUrl,
             published: post.published,
